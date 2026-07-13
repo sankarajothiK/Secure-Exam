@@ -67,7 +67,8 @@ const AdminExams = () => {
       toast.success(`Exam status updated to ${nextStatus}`);
       fetchExams();
     } catch (err) {
-      toast.error('Failed to toggle status');
+      console.error('Failed to toggle status:', err);
+      toast.error(err.response?.data?.message || 'Failed to toggle status');
     }
   };
 
