@@ -251,6 +251,9 @@ const getExamQuestions = async (req, res) => {
       description: exam.description,
       duration: exam.duration,
       questions: sanitizedQuestions,
+      hasAptitudeSection: exam.hasAptitudeSection,
+      hasCommunicationSection: exam.hasCommunicationSection,
+      communicationConfig: exam.communicationConfig,
     });
   } catch (error) {
     console.error('Get exam questions error:', error);

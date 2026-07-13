@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
-import { ShieldAlert, Clock, AlertTriangle, Monitor, UserCheck, CheckCircle } from 'lucide-react';
+import { ShieldAlert, Clock, AlertTriangle, Monitor, UserCheck, CheckCircle, Square, Volume2, Play, RefreshCw, Mic } from 'lucide-react';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -20,6 +20,18 @@ const ExamEngine = () => {
   const [loading, setLoading] = useState(true);
   const [startedAt] = useState(Date.now());
 
+  // AI Communication States
+  const [currentSection, setCurrentSection] = useState('aptitude'); // 'aptitude', 'transition', 'communication'
+  const [commQuestions, setCommQuestions] = useState([]);
+  const [commIdx, setCommIdx] = useState(0);
+  const [commAnswers, setCommAnswers] = useState([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [liveTranscript, setLiveTranscript] = useState('');
+  const [uploadingAudio, setUploadingAudio] = useState(false);
+  const [listeningPlayState, setListeningPlayState] = useState('unplayed'); // 'unplayed', 'playing', 'played'
+  const [mcqAnswer, setMcqAnswer] = useState('');
+  const [emailText, setEmailText] = useState('');
+
   // Proctoring States
   const [tabSwitches, setTabSwitches] = useState(0);
   const [fullscreenExits, setFullscreenExits] = useState(0);
@@ -35,6 +47,16 @@ const ExamEngine = () => {
   // Webcam Stream
   const [webcamStream, setWebcamStream] = useState(null);
   const videoRef = useRef(null);
+
+  // Audio & Animation Refs
+  const micStreamRef = useRef(null);
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const animationFrameRef = useRef(null);
+  const recognitionRef = useRef(null);
+  const canvasRef = useRef(null);
 
   // Load Exam
   useEffect(() => {
@@ -61,12 +83,17 @@ const ExamEngine = () => {
   // Timer Mechanism
   useEffect(() => {
     if (loading || isSubmitted || isTerminated || showFsWarning || !exam) return;
+    if (currentSection === 'communication' && listeningPlayState === 'playing') return;
 
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timerRef.current);
-          handleTimeOut();
+          if (currentSection === 'communication') {
+            handleCommTimeOut();
+          } else {
+            handleTimeOut();
+          }
           return 20;
         }
         return prev - 1;
@@ -76,7 +103,7 @@ const ExamEngine = () => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [loading, currentIdx, isSubmitted, isTerminated, showFsWarning, exam]);
+  }, [loading, currentIdx, commIdx, currentSection, listeningPlayState, isSubmitted, isTerminated, showFsWarning, exam]);
 
   // Webcam Overlay helper
   const startProctorWebcam = async () => {
@@ -492,6 +519,41 @@ const ExamEngine = () => {
         recognitionRef.current.stop();
       } catch (e) {}
       recognitionRef.current = null;
+    }
+  };
+
+  const setupCommunicationQuestion = (question) => {
+    setLiveTranscript('');
+    setMcqAnswer('');
+    setEmailText('');
+    setListeningPlayState('unplayed');
+    
+    if (question.category === 'ListeningComprehension') {
+      setTimeLeft(9999);
+    } else {
+      setTimeLeft(exam?.communicationConfig?.timePerQuestion || 30);
+    }
+  };
+
+  const loadCommunicationQuestions = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get(`/communication/exam/${examId}`);
+      if (res.data && res.data.length > 0) {
+        setCommQuestions(res.data);
+        setCommIdx(0);
+        setCurrentSection('communication');
+        const firstQ = res.data[0];
+        setupCommunicationQuestion(firstQ);
+        startProctorWebcam();
+      } else {
+        toast.error('No communication questions configured for this exam.');
+      }
+    } catch (err) {
+      console.error('Failed to load communication questions:', err);
+      toast.error(err.response?.data?.message || 'Failed to load communication questions.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -1065,8 +1127,8 @@ const ExamEngine = () => {
                         <button
                           onClick={handleNextCommQuestion}
                           disabled={
-                            (category === 'EmailWriting' && !emailText.trim()) ||
-                            (['ListeningComprehension', 'ReadingComprehension', 'Vocabulary', 'Grammar'].includes(category) && !mcqAnswer)
+                            (currentCommQ.category === 'EmailWriting' && !emailText.trim()) ||
+                            (['ListeningComprehension', 'ReadingComprehension', 'Vocabulary', 'Grammar'].includes(currentCommQ.category) && !mcqAnswer)
                           }
                           className="px-8 py-3 rounded-xl bg-slate-900 dark:bg-slate-800 hover:bg-slate-805 text-white font-bold transition disabled:opacity-40 disabled:cursor-not-allowed shadow"
                         >
