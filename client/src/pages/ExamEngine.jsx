@@ -29,6 +29,7 @@ const ExamEngine = () => {
   const [liveTranscript, setLiveTranscript] = useState('');
   const [uploadingAudio, setUploadingAudio] = useState(false);
   const [listeningPlayState, setListeningPlayState] = useState('unplayed'); // 'unplayed', 'playing', 'played'
+  const [isPrep, setIsPrep] = useState(false);
   const [mcqAnswer, setMcqAnswer] = useState('');
   const [emailText, setEmailText] = useState('');
 
@@ -251,6 +252,12 @@ const ExamEngine = () => {
   };
 
   const handleCommTimeOut = () => {
+    if (isPrep) {
+      setIsPrep(false);
+      startAudioRecording();
+      return;
+    }
+
     toast.info('Time limit reached for this question.');
     const currentCommQ = commQuestions[commIdx];
     const isSpeakingCategory = [
@@ -529,9 +536,19 @@ const ExamEngine = () => {
     setEmailText('');
     setListeningPlayState('unplayed');
     
-    if (question.category === 'ListeningComprehension') {
+    const isSpeakingCategory = [
+      'ListenRepeat', 'ReadAloud', 'TopicSpeaking', 'PictureDescription', 
+      'SituationResponse', 'ResumeIntroduction', 'HRInterview'
+    ].includes(question.category);
+
+    if (isSpeakingCategory) {
+      setIsPrep(true);
+      setTimeLeft(exam?.communicationConfig?.timePerQuestion || 30);
+    } else if (question.category === 'ListeningComprehension') {
+      setIsPrep(false);
       setTimeLeft(9999);
     } else {
+      setIsPrep(false);
       setTimeLeft(exam?.communicationConfig?.timePerQuestion || 30);
     }
   };
