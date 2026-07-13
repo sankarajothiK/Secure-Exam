@@ -35,6 +35,62 @@ const examSchema = new mongoose.Schema({
       required: true,
     }
   }],
+  hasAptitudeSection: {
+    type: Boolean,
+    default: true,
+  },
+  hasCommunicationSection: {
+    type: Boolean,
+    default: false,
+  },
+  communicationConfig: {
+    totalMarks: {
+      type: Number,
+      default: 50,
+    },
+    passingMarks: {
+      type: Number,
+      default: 25,
+    },
+    difficulty: {
+      type: String,
+      enum: ['Easy', 'Medium', 'Hard'],
+      default: 'Medium',
+    },
+    timePerQuestion: {
+      type: Number,
+      default: 30, // seconds for reading/prep
+    },
+    recordingDuration: {
+      type: Number,
+      default: 120, // seconds for speaking sections
+    },
+    selectedCategories: {
+      type: [String],
+      default: [
+        'ListenRepeat',
+        'ListeningComprehension',
+        'ReadAloud',
+        'TopicSpeaking',
+        'PictureDescription',
+        'SituationResponse',
+        'ReadingComprehension',
+        'Vocabulary',
+        'Grammar',
+        'EmailWriting',
+        'ResumeIntroduction',
+        'HRInterview'
+      ]
+    },
+    randomizeQuestions: {
+      type: Boolean,
+      default: true,
+    },
+    questionCount: {
+      type: Number,
+      default: 12,
+    }
+  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Admin',

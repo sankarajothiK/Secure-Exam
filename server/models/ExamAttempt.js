@@ -34,6 +34,69 @@ const examAttemptSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  communicationScore: {
+    type: Number,
+    default: 0,
+  },
+  overallScore: {
+    type: Number,
+    default: 0,
+  },
+  isCommunicationEvaluated: {
+    type: Boolean,
+    default: false,
+  },
+  communicationAnswers: [{
+    category: {
+      type: String,
+      required: true,
+    },
+    questionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'CommunicationQuestion',
+    },
+    prompt: {
+      type: String,
+      default: '',
+    },
+    audioPath: {
+      type: String,
+      default: '',
+    },
+    emailText: {
+      type: String,
+      default: '',
+    },
+    mcqAnswer: {
+      type: String,
+      default: '',
+    },
+    transcript: {
+      type: String,
+      default: '',
+    },
+    aiMetrics: {
+      accuracyScore: { type: Number, default: 0 },
+      pronunciationScore: { type: Number, default: 0 },
+      fluencyScore: { type: Number, default: 0 },
+      confidenceScore: { type: Number, default: 0 },
+      grammarScore: { type: Number, default: 0 },
+      vocabularyScore: { type: Number, default: 0 },
+      fillerWordCount: { type: Number, default: 0 },
+      speakingWpm: { type: Number, default: 0 },
+      missingWords: [String],
+      extraWords: [String],
+      mispronouncedWords: [String],
+      feedback: { type: String, default: '' },
+    }
+  }],
+  aiSummary: {
+    cefrLevel: { type: String, default: 'A1' },
+    strengths: [String],
+    weaknesses: [String],
+    improvementSuggestions: [String],
+    overallFeedback: { type: String, default: '' },
+  },
   tabSwitchCount: {
     type: Number,
     default: 0,

@@ -36,8 +36,9 @@ app.use('/api', apiLimiter);
 const uploadsDir = path.join(__dirname, 'uploads');
 const selfiesDir = path.join(uploadsDir, 'selfies');
 const aadhaarDir = path.join(uploadsDir, 'aadhaar');
+const recordingsDir = path.join(uploadsDir, 'recordings');
 
-[uploadsDir, selfiesDir, aadhaarDir].forEach(dir => {
+[uploadsDir, selfiesDir, aadhaarDir, recordingsDir].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
     console.log(`Created directory: ${dir}`);
@@ -51,6 +52,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/employee', require('./routes/employee'));
 app.use('/api/exams', require('./routes/exams'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/communication', require('./routes/communication'));
 
 // Basic health check route
 app.get('/health', (req, res) => {
@@ -99,11 +101,14 @@ app.use((err, req, res, next) => {
 
 // Port and Startup
 const PORT = process.env.PORT || 5000;
+const seedCommunicationQuestions = require('./seed/communicationQuestionsSeeder');
 
 connectDB().then(() => {
   seedAdmin().then(() => {
-    app.listen(PORT, () => {
-      console.log(`Server running in production-ready mode on port ${PORT}`);
+    seedCommunicationQuestions().then(() => {
+      app.listen(PORT, () => {
+        console.log(`Server running in production-ready mode on port ${PORT}`);
+      });
     });
   });
 });

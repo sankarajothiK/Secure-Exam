@@ -87,17 +87,20 @@ const getResults = async (req, res) => {
     // 3. Query Database
     const attempts = await ExamAttempt.find(query)
       .populate('employee', 'name email mobile selfieUrl aadhaarUrl')
-      .populate('exam', 'title duration')
+      .populate('exam', 'title duration hasAptitudeSection hasCommunicationSection communicationConfig')
       .sort({ submittedAt: -1 });
 
     // Format attempts
     const formattedResults = attempts.map(attempt => {
       const e = attempt.employee || { name: 'Deleted Employee', email: '', mobile: '', selfieUrl: '', aadhaarUrl: '' };
-      const ex = attempt.exam || { title: 'Deleted Assessment', duration: 0 };
+      const ex = attempt.exam || { title: 'Deleted Assessment', duration: 0, hasAptitudeSection: true, hasCommunicationSection: false, communicationConfig: {} };
       
-      const percentage = attempt.totalQuestions > 0 
-        ? Math.round((attempt.score / attempt.totalQuestions) * 100) 
-        : 0;
+      const maxAptitude = ex.hasAptitudeSection ? attempt.totalQuestions : 0;
+      const maxComm = ex.hasCommunicationSection && ex.communicationConfig ? (ex.communicationConfig.totalMarks || 50) : 0;
+      const maxTotal = maxAptitude + maxComm;
+      
+      const actualScore = attempt.overallScore || attempt.score;
+      const percentage = maxTotal > 0 ? Math.round((actualScore / maxTotal) * 100) : 0;
 
       return {
         _id: attempt._id,
@@ -108,8 +111,8 @@ const getResults = async (req, res) => {
         aadhaarUrl: e.aadhaarUrl,
         examName: ex.title,
         submissionTime: attempt.submittedAt,
-        score: attempt.score,
-        totalQuestions: attempt.totalQuestions,
+        score: actualScore,
+        totalQuestions: maxTotal,
         percentage,
         correct: attempt.answers.filter(a => a.isCorrect).length,
         wrong: attempt.answers.filter(a => !a.isCorrect && a.selectedOption !== '').length,
@@ -132,14 +135,14 @@ const getResultDetails = async (req, res) => {
 
     const attempt = await ExamAttempt.findById(id)
       .populate('employee', 'name email mobile selfieUrl aadhaarUrl')
-      .populate('exam', 'title duration questions');
+      .populate('exam', 'title duration questions hasAptitudeSection hasCommunicationSection communicationConfig');
 
     if (!attempt) {
       return res.status(404).json({ message: 'Attempt record not found' });
     }
 
     const emp = attempt.employee || { name: 'Deleted Employee', email: '', mobile: '', selfieUrl: '', aadhaarUrl: '' };
-    const ex = attempt.exam || { title: 'Deleted Assessment', duration: 0, questions: [] };
+    const ex = attempt.exam || { title: 'Deleted Assessment', duration: 0, questions: [], hasAptitudeSection: true, hasCommunicationSection: false, communicationConfig: {} };
 
     // Format answers detail
     const detailsAnswers = attempt.answers.map((employeeAns) => {
@@ -181,6 +184,14 @@ const getResultDetails = async (req, res) => {
       status: attempt.status,
       reason: attempt.reason,
       answers: detailsAnswers,
+      hasAptitudeSection: ex.hasAptitudeSection,
+      hasCommunicationSection: ex.hasCommunicationSection,
+      communicationConfig: ex.communicationConfig || {},
+      communicationScore: attempt.communicationScore || 0,
+      overallScore: attempt.overallScore || 0,
+      isCommunicationEvaluated: attempt.isCommunicationEvaluated || false,
+      communicationAnswers: attempt.communicationAnswers || [],
+      aiSummary: attempt.aiSummary || { cefrLevel: 'A1', strengths: [], weaknesses: [], improvementSuggestions: [], overallFeedback: '' }
     });
   } catch (error) {
     console.error('Result detail query error:', error);

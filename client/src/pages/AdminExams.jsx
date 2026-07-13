@@ -23,6 +23,22 @@ const AdminExams = () => {
     { questionText: '', options: ['', '', '', ''], correctAnswer: 'A' }
   ]);
 
+  // Section config states
+  const [hasAptitudeSection, setHasAptitudeSection] = useState(true);
+  const [hasCommunicationSection, setHasCommunicationSection] = useState(false);
+  
+  // Communication parameters
+  const [commTotalMarks, setCommTotalMarks] = useState(50);
+  const [commQuestionCount, setCommQuestionCount] = useState(12);
+  const [commPassingMarks, setCommPassingMarks] = useState(25);
+  const [commDifficulty, setCommDifficulty] = useState('Mixed');
+  const [commTimePerQuestion, setCommTimePerQuestion] = useState(30);
+  const [commRecordingDuration, setCommRecordingDuration] = useState(120);
+  const [commWeightFluency, setCommWeightFluency] = useState(25);
+  const [commWeightPronunciation, setCommWeightPronunciation] = useState(25);
+  const [commWeightGrammar, setCommWeightGrammar] = useState(25);
+  const [commWeightVocabulary, setCommWeightVocabulary] = useState(25);
+
   useEffect(() => {
     fetchExams();
   }, []);
@@ -89,6 +105,24 @@ const AdminExams = () => {
       options: [...q.options],
       correctAnswer: q.correctAnswer
     })));
+
+    setHasAptitudeSection(exam.hasAptitudeSection !== undefined ? exam.hasAptitudeSection : true);
+    setHasCommunicationSection(!!exam.hasCommunicationSection);
+    
+    const cc = exam.communicationConfig || {};
+    setCommTotalMarks(cc.totalMarks || 50);
+    setCommQuestionCount(cc.questionCount || 12);
+    setCommPassingMarks(cc.passingMarks || 25);
+    setCommDifficulty(cc.difficulty || 'Mixed');
+    setCommTimePerQuestion(cc.timePerQuestion || 30);
+    setCommRecordingDuration(cc.recordingDuration || 120);
+    
+    const w = cc.evaluationWeightage || {};
+    setCommWeightFluency(w.fluency || 25);
+    setCommWeightPronunciation(w.pronunciation || 25);
+    setCommWeightGrammar(w.grammar || 25);
+    setCommWeightVocabulary(w.vocabulary || 25);
+
     setShowEditModal(true);
   };
 
@@ -119,14 +153,37 @@ const AdminExams = () => {
     e.preventDefault();
     if (!formTitle.trim()) return toast.error('Exam title is required');
 
+    if (hasCommunicationSection) {
+      const sum = Number(commWeightFluency) + Number(commWeightPronunciation) + Number(commWeightGrammar) + Number(commWeightVocabulary);
+      if (sum !== 100) {
+        return toast.error('Communication sub-skill weightages must sum to exactly 100%');
+      }
+    }
+
     try {
       await api.post('/exams', {
         title: formTitle,
         description: formDesc,
         duration: formDuration,
-        questions: formQuestions
+        questions: formQuestions,
+        hasAptitudeSection,
+        hasCommunicationSection,
+        communicationConfig: {
+          totalMarks: commTotalMarks,
+          questionCount: commQuestionCount,
+          passingMarks: commPassingMarks,
+          difficulty: commDifficulty,
+          timePerQuestion: commTimePerQuestion,
+          recordingDuration: commRecordingDuration,
+          evaluationWeightage: {
+            fluency: commWeightFluency,
+            pronunciation: commWeightPronunciation,
+            grammar: commWeightGrammar,
+            vocabulary: commWeightVocabulary
+          }
+        }
       });
-      toast.success('Exam manual created successfully');
+      toast.success('Exam created successfully');
       setShowCreateModal(false);
       resetForm();
       fetchExams();
@@ -140,12 +197,35 @@ const AdminExams = () => {
     e.preventDefault();
     if (!formTitle.trim()) return toast.error('Exam title is required');
 
+    if (hasCommunicationSection) {
+      const sum = Number(commWeightFluency) + Number(commWeightPronunciation) + Number(commWeightGrammar) + Number(commWeightVocabulary);
+      if (sum !== 100) {
+        return toast.error('Communication sub-skill weightages must sum to exactly 100%');
+      }
+    }
+
     try {
       await api.put(`/exams/${activeExam._id}`, {
         title: formTitle,
         description: formDesc,
         duration: formDuration,
-        questions: formQuestions
+        questions: formQuestions,
+        hasAptitudeSection,
+        hasCommunicationSection,
+        communicationConfig: {
+          totalMarks: commTotalMarks,
+          questionCount: commQuestionCount,
+          passingMarks: commPassingMarks,
+          difficulty: commDifficulty,
+          timePerQuestion: commTimePerQuestion,
+          recordingDuration: commRecordingDuration,
+          evaluationWeightage: {
+            fluency: commWeightFluency,
+            pronunciation: commWeightPronunciation,
+            grammar: commWeightGrammar,
+            vocabulary: commWeightVocabulary
+          }
+        }
       });
       toast.success('Exam updated successfully');
       setShowEditModal(false);
@@ -161,6 +241,18 @@ const AdminExams = () => {
     setFormDesc('');
     setFormDuration(20);
     setFormQuestions([{ questionText: '', options: ['', '', '', ''], correctAnswer: 'A' }]);
+    setHasAptitudeSection(true);
+    setHasCommunicationSection(false);
+    setCommTotalMarks(50);
+    setCommQuestionCount(12);
+    setCommPassingMarks(25);
+    setCommDifficulty('Mixed');
+    setCommTimePerQuestion(30);
+    setCommRecordingDuration(120);
+    setCommWeightFluency(25);
+    setCommWeightPronunciation(25);
+    setCommWeightGrammar(25);
+    setCommWeightVocabulary(25);
     setActiveExam(null);
   };
 
@@ -362,27 +454,173 @@ const AdminExams = () => {
                     />
                   </div>
                   <div>
-                    <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Per-Question Duration (Seconds)</label>
+                    <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Description / Instructions</label>
                     <input
-                      type="number"
-                      value={formDuration}
-                      onChange={(e) => setFormDuration(parseInt(e.target.value, 10))}
-                      placeholder="20"
+                      type="text"
+                      value={formDesc}
+                      onChange={(e) => setFormDesc(e.target.value)}
+                      placeholder="Enter exam instructions"
                       className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 py-2.5 px-4 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Description / Instructions</label>
-                  <textarea
-                    value={formDesc}
-                    onChange={(e) => setFormDesc(e.target.value)}
-                    placeholder="Enter exam description"
-                    rows="2"
-                    className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 py-2.5 px-4 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  />
+                {/* Section selection toggles */}
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/20 space-y-4">
+                  <h4 className="font-bold text-slate-905 dark:text-white mb-2">Enable Sections</h4>
+                  <div className="flex flex-wrap gap-6">
+                    <label className="flex items-center gap-2 cursor-pointer font-semibold text-slate-700 dark:text-slate-300">
+                      <input
+                        type="checkbox"
+                        checked={hasAptitudeSection}
+                        onChange={(e) => setHasAptitudeSection(e.target.checked)}
+                        className="rounded border-slate-300 text-indigo-650"
+                      />
+                      Aptitude Section (MCQs)
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer font-semibold text-slate-700 dark:text-slate-300">
+                      <input
+                        type="checkbox"
+                        checked={hasCommunicationSection}
+                        onChange={(e) => setHasCommunicationSection(e.target.checked)}
+                        className="rounded border-slate-300 text-indigo-650"
+                      />
+                      AI Communication Section
+                    </label>
+                  </div>
                 </div>
+
+                {/* APTITUDE SECTION CONFIG */}
+                {hasAptitudeSection && (
+                  <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-4">
+                    <h4 className="font-bold text-indigo-600 dark:text-indigo-400">Aptitude Configuration</h4>
+                    <div>
+                      <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Per-Question Duration (Seconds)</label>
+                      <input
+                        type="number"
+                        value={formDuration}
+                        onChange={(e) => setFormDuration(parseInt(e.target.value, 10))}
+                        placeholder="20"
+                        className="w-48 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 py-2 px-3 text-slate-905 dark:text-white"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* COMMUNICATION SECTION CONFIG */}
+                {hasCommunicationSection && (
+                  <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-6">
+                    <h4 className="font-bold text-amber-500">AI Communication Configuration</h4>
+                    
+                    <div className="grid gap-4 grid-cols-2 sm:grid-cols-3">
+                      <div>
+                        <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Total Comm Marks</label>
+                        <input
+                          type="number"
+                          value={commTotalMarks}
+                          onChange={(e) => setCommTotalMarks(parseInt(e.target.value, 10))}
+                          className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 py-2 px-3"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Number of Questions</label>
+                        <input
+                          type="number"
+                          value={commQuestionCount}
+                          onChange={(e) => setCommQuestionCount(parseInt(e.target.value, 10))}
+                          className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 py-2 px-3"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Passing Marks</label>
+                        <input
+                          type="number"
+                          value={commPassingMarks}
+                          onChange={(e) => setCommPassingMarks(parseInt(e.target.value, 10))}
+                          className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 py-2 px-3"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Difficulty</label>
+                        <select
+                          value={commDifficulty}
+                          onChange={(e) => setCommDifficulty(e.target.value)}
+                          className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 py-2 px-3"
+                        >
+                          <option value="Mixed">Mixed</option>
+                          <option value="Easy">Easy</option>
+                          <option value="Medium">Medium</option>
+                          <option value="Hard">Hard</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Duration / Question (s)</label>
+                        <input
+                          type="number"
+                          value={commTimePerQuestion}
+                          onChange={(e) => setCommTimePerQuestion(parseInt(e.target.value, 10))}
+                          className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 py-2 px-3"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Max Recording (s)</label>
+                        <input
+                          type="number"
+                          value={commRecordingDuration}
+                          onChange={(e) => setCommRecordingDuration(parseInt(e.target.value, 10))}
+                          className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 py-2 px-3"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+                      <h5 className="font-bold text-slate-800 dark:text-slate-350 mb-3">AI Evaluation Weightages (Must sum to 100%)</h5>
+                      <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-500 mb-1">Fluency Weight (%)</label>
+                          <input
+                            type="number"
+                            value={commWeightFluency}
+                            onChange={(e) => setCommWeightFluency(parseInt(e.target.value, 10))}
+                            className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 py-2 px-3"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-500 mb-1">Pronunciation (%)</label>
+                          <input
+                            type="number"
+                            value={commWeightPronunciation}
+                            onChange={(e) => setCommWeightPronunciation(parseInt(e.target.value, 10))}
+                            className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 py-2 px-3"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-500 mb-1">Grammar (%)</label>
+                          <input
+                            type="number"
+                            value={commWeightGrammar}
+                            onChange={(e) => setCommWeightGrammar(parseInt(e.target.value, 10))}
+                            className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 py-2 px-3"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-500 mb-1">Vocabulary (%)</label>
+                          <input
+                            type="number"
+                            value={commWeightVocabulary}
+                            onChange={(e) => setCommWeightVocabulary(parseInt(e.target.value, 10))}
+                            className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 py-2 px-3"
+                          />
+                        </div>
+                      </div>
+                      <div className="mt-3 text-xs font-bold text-slate-450">
+                        Total Weightage: <span className={Number(commWeightFluency) + Number(commWeightPronunciation) + Number(commWeightGrammar) + Number(commWeightVocabulary) === 100 ? 'text-emerald-500' : 'text-red-500'}>
+                          {Number(commWeightFluency) + Number(commWeightPronunciation) + Number(commWeightGrammar) + Number(commWeightVocabulary)}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="border-t border-slate-100 dark:border-slate-800 pt-6">
                   <div className="flex items-center justify-between mb-4">

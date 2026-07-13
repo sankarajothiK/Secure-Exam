@@ -91,6 +91,19 @@ const EmployeeDashboard = () => {
                 className="flex flex-col justify-between rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm hover:shadow-md transition-shadow"
               >
                 <div>
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {exam.hasAptitudeSection && (
+                      <span className="rounded bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 text-[10px] font-black uppercase">
+                        Aptitude
+                      </span>
+                    )}
+                    {exam.hasCommunicationSection && (
+                      <span className="rounded bg-amber-55 text-amber-700 dark:text-amber-400 px-2 py-0.5 text-[10px] font-black uppercase">
+                        AI Communication
+                      </span>
+                    )}
+                  </div>
+                  
                   <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                     {exam.title}
                   </h3>
@@ -98,15 +111,19 @@ const EmployeeDashboard = () => {
                     {exam.description || 'No instructions specified.'}
                   </p>
 
-                  <div className="mt-4 flex items-center gap-4 text-xs font-semibold text-slate-600 dark:text-slate-400">
-                    <span className="flex items-center gap-1">
-                      <HelpCircle className="h-3.5 w-3.5 text-primary-500" />
-                      {exam.questionsCount} MCQs
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5 text-indigo-500" />
-                      {exam.questionsCount * 20}s (20s / Q)
-                    </span>
+                  <div className="mt-4 flex flex-wrap gap-4 text-xs font-semibold text-slate-655 dark:text-slate-400">
+                    {exam.hasAptitudeSection && (
+                      <span className="flex items-center gap-1">
+                        <HelpCircle className="h-3.5 w-3.5 text-indigo-550" />
+                        {exam.questionsCount} MCQs
+                      </span>
+                    )}
+                    {exam.hasCommunicationSection && (
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3.5 w-3.5 text-amber-500" />
+                        {exam.communicationConfig?.questionCount || 12} Speaking Modules
+                      </span>
+                    )}
                   </div>
                 </div>
 
