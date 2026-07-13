@@ -4,19 +4,34 @@ const { parseExamPDFs } = require('../services/pdfParser');
 // Create Exam
 const createExam = async (req, res) => {
   try {
-    const { title, description, duration, questions } = req.body;
+    const { 
+      title, 
+      description, 
+      duration, 
+      questions,
+      hasAptitudeSection,
+      hasCommunicationSection,
+      communicationConfig
+    } = req.body;
 
-    if (!title || !questions || !Array.isArray(questions) || questions.length === 0) {
-      return res.status(400).json({ message: 'Exam title and questions are required.' });
+    if (!title) {
+      return res.status(400).json({ message: 'Exam title is required.' });
+    }
+
+    const isAptitude = hasAptitudeSection !== undefined ? hasAptitudeSection : true;
+    if (isAptitude && (!questions || !Array.isArray(questions) || questions.length === 0)) {
+      return res.status(400).json({ message: 'Exam title and aptitude questions are required.' });
     }
 
     // Validate that each question has exactly 4 options and a correct answer A-D
-    for (let i = 0; i < questions.length; i++) {
-      const q = questions[i];
-      if (!q.questionText || !q.options || q.options.length !== 4 || !['A', 'B', 'C', 'D'].includes(q.correctAnswer)) {
-        return res.status(400).json({
-          message: `Question at index ${i} is invalid. Make sure it has 4 options and a valid correct answer (A, B, C, or D).`,
-        });
+    if (questions && Array.isArray(questions)) {
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        if (!q.questionText || !q.options || q.options.length !== 4 || !['A', 'B', 'C', 'D'].includes(q.correctAnswer)) {
+          return res.status(400).json({
+            message: `Question at index ${i} is invalid. Make sure it has 4 options and a valid correct answer (A, B, C, or D).`,
+          });
+        }
       }
     }
 
@@ -24,7 +39,10 @@ const createExam = async (req, res) => {
       title,
       description,
       duration: duration || 20, // default 20 seconds
-      questions,
+      questions: questions || [],
+      hasAptitudeSection: isAptitude,
+      hasCommunicationSection: hasCommunicationSection !== undefined ? hasCommunicationSection : false,
+      communicationConfig: communicationConfig || {},
       createdBy: req.user.id,
       status: 'Inactive', // default starting status
     });
@@ -41,7 +59,16 @@ const createExam = async (req, res) => {
 const updateExam = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, duration, questions, status } = req.body;
+    const { 
+      title, 
+      description, 
+      duration, 
+      questions, 
+      status,
+      hasAptitudeSection,
+      hasCommunicationSection,
+      communicationConfig
+    } = req.body;
 
     const exam = await Exam.findById(id);
     if (!exam) {
@@ -52,6 +79,15 @@ const updateExam = async (req, res) => {
     if (description !== undefined) exam.description = description;
     if (duration !== undefined) exam.duration = duration;
     if (status) exam.status = status;
+    if (hasAptitudeSection !== undefined) exam.hasAptitudeSection = hasAptitudeSection;
+    if (hasCommunicationSection !== undefined) exam.hasCommunicationSection = hasCommunicationSection;
+    if (communicationConfig !== undefined) {
+      exam.communicationConfig = {
+        ...exam.communicationConfig,
+        ...communicationConfig
+      };
+    }
+
     if (questions && Array.isArray(questions)) {
       // Validate questions format
       for (let i = 0; i < questions.length; i++) {
