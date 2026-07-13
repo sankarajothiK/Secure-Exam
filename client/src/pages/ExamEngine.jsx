@@ -83,6 +83,7 @@ const ExamEngine = () => {
   // Timer Mechanism
   useEffect(() => {
     if (loading || isSubmitted || isTerminated || showFsWarning || !exam) return;
+    if (currentSection === 'transition') return;
     if (currentSection === 'communication' && listeningPlayState === 'playing') return;
 
     timerRef.current = setInterval(() => {
