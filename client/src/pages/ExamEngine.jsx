@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
-import { ShieldAlert, Clock, AlertTriangle, Monitor, UserCheck, CheckCircle, Square, Volume2, Play, RefreshCw, Mic } from 'lucide-react';
+import { ShieldAlert, Clock, AlertTriangle, Monitor, UserCheck, CheckCircle, Square, Volume2, Play, RefreshCw, Mic, ImageIcon } from 'lucide-react';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 
