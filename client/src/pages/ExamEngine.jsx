@@ -547,6 +547,9 @@ const ExamEngine = () => {
     } else if (question.category === 'ListeningComprehension') {
       setIsPrep(false);
       setTimeLeft(9999);
+    } else if (question.category === 'EmailWriting') {
+      setIsPrep(false);
+      setTimeLeft(120); // 2 minutes (120 seconds) for Email Writing
     } else {
       setIsPrep(false);
       setTimeLeft(exam?.communicationConfig?.timePerQuestion || 30);
@@ -704,6 +707,16 @@ const ExamEngine = () => {
   const currentQ = questions[currentIdx];
   const currentCommQ = commQuestions[commIdx];
 
+  const formatTime = (seconds) => {
+    if (seconds >= 999) return 'Self-Paced';
+    if (seconds >= 60) {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
+    }
+    return `${seconds}s`;
+  };
+
   // Helper to format category names for display
   const getCategoryLabel = (cat) => {
     const labels = {
@@ -772,7 +785,7 @@ const ExamEngine = () => {
 
               <div className="flex items-center gap-2 rounded-xl bg-amber-500/10 border border-amber-500/20 px-3.5 py-2 text-amber-600 dark:text-amber-400">
                 <Clock className="h-4.5 w-4.5 shrink-0" />
-                <span className="font-mono font-bold text-sm tracking-widest">{timeLeft}s</span>
+                <span className="font-mono font-bold text-sm tracking-widest">{formatTime(timeLeft)}</span>
               </div>
             </div>
           </header>
@@ -907,7 +920,7 @@ const ExamEngine = () => {
               <div className="flex items-center gap-2 rounded-xl bg-amber-500/10 border border-amber-500/20 px-3.5 py-2 text-amber-600 dark:text-amber-400">
                 <Clock className="h-4.5 w-4.5 shrink-0 animate-pulse" />
                 <span className="font-mono font-bold text-sm tracking-widest">
-                  {isPrep ? `Prep: ${timeLeft}s` : `${timeLeft}s`}
+                  {isPrep ? `Prep: ${formatTime(timeLeft)}` : formatTime(timeLeft)}
                 </span>
               </div>
             </div>
@@ -944,7 +957,7 @@ const ExamEngine = () => {
                       {currentCommQ.prompt}
                     </div>
 
-                    <div className="text-4xl font-black text-amber-500 font-mono tracking-wider">{timeLeft}s</div>
+                    <div className="text-4xl font-black text-amber-500 font-mono tracking-wider">{formatTime(timeLeft)}</div>
                   </div>
                 ) : (
                   <div className="space-y-6">
